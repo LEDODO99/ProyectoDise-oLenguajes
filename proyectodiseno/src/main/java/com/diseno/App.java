@@ -49,10 +49,10 @@ public final class App {
         + "{\n";
         for (int i=0; i<grafo.getCantidadNodos(); i++){
             for (int j=0; j<grafo.getNodo(i).getTransiciones().size();j++){
-                if (grafo.getNodo(i).isIsFinal()){
-                    texto = texto + i + "[style=filled, fillcolor=yellow];\n";
-                }
                 texto=texto + i +" -> " + grafo.getNodo(i).getTransiciones().get(j).getObjetivo() +" [ fontcolor=orange, label=\""+grafo.getNodo(i).getTransiciones().get(j).getParametro()+"\"];";
+            }
+            if (grafo.getNodo(i).isIsFinal()){
+                texto = texto + i + "[style=filled, fillcolor=yellow];\n";
             }
         }
         texto=texto+"\n}";
