@@ -6,11 +6,13 @@ public class Lector{
     private final String EPSILON = "epsilon";
     private Grafo noDeterminista;
     private boolean afterOr=false;
+    private boolean isfirst=true;
     private int parenthesisDepth=0;
     private boolean exitParenthesis=false;
     private ArrayList<Integer> firstNodes;
     private ArrayList<Integer> lastNodes;
     private ArrayList<String> symbols;
+    private ArrayList<Boolean> orDepth;
 
     private ArbolER arbolER;
 
@@ -38,14 +40,17 @@ public class Lector{
     private void reiniciarVariables(){
         firstNodes=new ArrayList<>();
         lastNodes=new ArrayList<>();
+        orDepth=new ArrayList<>();
         noDeterminista = new Grafo();
         subConjuntos = new Grafo();
         afdDirecto = new Grafo();
         afterOr=false;
         exitParenthesis=false;
+        isfirst=true;
         parenthesisDepth=0;
         firstNodes.add(0);
         lastNodes.add(0);
+        orDepth.add(false);
         symbols = new ArrayList<>();
         arbolER = new ArbolER();
     }
@@ -201,6 +206,10 @@ public class Lector{
                 thomsonChar(expresionReg.charAt(i));
             }
         }
+        if(orDepth.get(0)){
+            noDeterminista.addTransicion(lastNodes.get(lastNodes.size()-1), lastNodes.get(0), EPSILON);
+            lastNodes.remove(lastNodes.size()-1);
+        }
         noDeterminista.getNodo(lastNodes.get(0)).setIsFinal(true);
         
     }
@@ -217,12 +226,23 @@ public class Lector{
         }
     }
     private void thomsonOpenPar(){
-        firstNodes.add(lastNodes.get(lastNodes.size()-1));
+        firstNodes.add(noDeterminista.getCantidadNodos());
+        noDeterminista.addNode(lastNodes.get(lastNodes.size()-1), EPSILON);
+        lastNodes.set(lastNodes.size()-1, noDeterminista.getCantidadNodos()-1);
+        isfirst=true;
+        orDepth.add(false);
         parenthesisDepth++;
     }
     private void thomsonClosePar(){
-        exitParenthesis=true;
-        parenthesisDepth--;
+        if(parenthesisDepth>0){
+            if (orDepth.get(orDepth.size()-1)){
+                noDeterminista.addTransicion(lastNodes.get(lastNodes.size()-1), lastNodes.get(lastNodes.size()-2), EPSILON);
+                lastNodes.remove(lastNodes.size()-1);
+            }
+            firstNodes.remove(firstNodes.size()-1);
+            isfirst=true;
+            orDepth.remove(orDepth.size()-1);
+        }
     }
     private void thomsonStar(){
         noDeterminista.getNodo(firstNodes.get(firstNodes.size()-1)).addTransicion(lastNodes.get(lastNodes.size()-1), EPSILON);
@@ -233,30 +253,26 @@ public class Lector{
         
     }
     private void thomsonOr(){
-        afterOr=true;
+        isfirst=true;
+        orDepth.set(orDepth.size()-1, true);
+        firstNodes.remove(firstNodes.size()-1);
+        lastNodes.add(firstNodes.get(firstNodes.size()-1));
     }
     private void thomsonQuestion(){
         noDeterminista.getNodo(firstNodes.get(firstNodes.size()-1)).addTransicion(lastNodes.get(lastNodes.size()-1), EPSILON);
         
     }
     private void thomsonChar(char caracter){
-        if (afterOr){
-            afterOr=false;
-            noDeterminista.addNode(firstNodes.get(firstNodes.size()-1), EPSILON);
-            noDeterminista.addNode(noDeterminista.getCantidadNodos()-1, Character.toString(caracter));
-            noDeterminista.addTransicion(noDeterminista.getCantidadNodos()-1, lastNodes.get(lastNodes.size()-1), EPSILON);
+        if (isfirst){
+            firstNodes.add(noDeterminista.getCantidadNodos());
+            isfirst=false;
         }else{
-            if(exitParenthesis){
-                firstNodes.remove(firstNodes.size()-1);
-                exitParenthesis=false;
-            }
-            firstNodes.set(firstNodes.size()-1, lastNodes.get(lastNodes.size()-1));
-            noDeterminista.addNode(firstNodes.get(firstNodes.size()-1), EPSILON);
-            noDeterminista.addNode(noDeterminista.getCantidadNodos()-1, Character.toString(caracter));
-            noDeterminista.addNode(noDeterminista.getCantidadNodos()-1, EPSILON);
-            lastNodes.set(lastNodes.size()-1, noDeterminista.getCantidadNodos()-1);
-
+            firstNodes.set(firstNodes.size()-1, noDeterminista.getCantidadNodos());
         }
+        noDeterminista.addNode(lastNodes.get(lastNodes.size()-1), EPSILON);
+        noDeterminista.addNode(noDeterminista.getCantidadNodos()-1, Character.toString(caracter));
+        noDeterminista.addNode(noDeterminista.getCantidadNodos()-1, EPSILON);
+        lastNodes.set(lastNodes.size()-1, noDeterminista.getCantidadNodos()-1);
     }
     
     private boolean validarSubConjuntos(String cadena){
