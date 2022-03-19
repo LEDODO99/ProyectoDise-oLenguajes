@@ -3,7 +3,11 @@ package com.diseno;
 import java.beans.Expression;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Scanner;
+
+import org.apache.commons.logging.Log;
 
 
 /**
@@ -26,24 +30,65 @@ public final class App {
             String expReg = scanner.nextLine();
             System.out.println("Ingrese la expresión a validar");
             String expVal = scanner.nextLine();
-            if(lector.generarAutomatas(expReg)){
-                System.out.println("Automatas generados apropiadamente");
-                drawGraphviz("noDeterminista.dot", lector.getNFA(), "noDeterminista.png");
-                drawGraphviz("subConjuntos.dot", lector.getSubconjuntos(), "subConjuntos.png");
-                if(lector.validarCadena(expVal))
-                    System.out.println("Expresion valida!");
-                else
-                    System.out.println("Expresion no válida");
+            long time1;
+            long time2;
+            boolean automataGenerado = false;
+            time1 = System.nanoTime();
+            automataGenerado = lector.generarThomson(expReg);
+            time2 = System.nanoTime();
+            if (automataGenerado){
+                System.out.println("AFN Thomson generado apropiadamanete en "+ ((float)(time2-time1))/1000.0 +" microsegundos");
+            } else{
+                System.out.println("Error en generación de Automatas o cadena erronea");
             }
-            
-            System.out.println("\n\n\nMENU: ingrese la opcion que desea\n_________________________________________\n(1) Realizar una nueva validacion\n(2) Salir");
+            time1 = System.nanoTime();
+            automataGenerado = lector.generarSubConjuntos();
+            time2 = System.nanoTime();
+            if (automataGenerado){
+                System.out.println("AFD Subconjuntos generado apropiadamanete en "+ ((float)(time2-time1))/1000.0 +" microsegundos");
+            } else{
+                System.out.println("Error en generación de Automatas o cadena erronea");
+            }
+            time1 = System.nanoTime();
+            automataGenerado = lector.generarDirecto(expReg);
+            time2 = System.nanoTime();
+            if (automataGenerado){
+                System.out.println("AFD Directo generado apropiadamanete en "+ ((float)(time2-time1))/1000.0 +" microsegundos");
+            } else{
+                System.out.println("Error en generación de Automatas o cadena erronea");
+            }
+            drawGraphviz("noDeterminista.dot", lector.getNFA(), "noDeterminista.png");
+            drawGraphviz("subConjuntos.dot", lector.getSubconjuntos(), "subConjuntos.png");
+            drawGraphviz("directo2.dot", lector.getAfdDirecto(), "directo2.png");
+            drawTreeviz("arbol.dot", lector.getArbol(), lector.getRaizArbol(), "arbol.png");
+            boolean cadenaValida;
+            cadenaValida = lector.validarCadenaThomson(expVal);
+            if(cadenaValida){
+                System.out.println("Cadena Valida en AFN Thomson");
+            }else{
+                System.out.println("Cadena No Valida en AFN Thomson");
+            }
+            cadenaValida = lector.validarCadenaSub(expVal);
+            if(cadenaValida){
+                System.out.println("Cadena Valida en AFD Subconjuntos");
+            }else{
+                System.out.println("Cadena No Valida en AFD Subconjuntos");
+            }
+            cadenaValida = lector.validarCadenaDirect(expVal);
+            if(cadenaValida){
+                System.out.println("Cadena Valida en AFD Directo");
+            }else{
+                System.out.println("Cadena No Valida en AFD Directo");
+            }
+            System.out.println("Ejecución finalizada, presione enter para regresar al menu");
+            scanner.nextLine();
+            System.out.println("\n\n\n\n\nMENU: ingrese la opcion que desea\n_________________________________________\n(1) Realizar una nueva validacion\n(2) Salir");
             menu = scanner.nextLine();
         }
         System.out.println("Gracias por utilizar el programa\nPara salir presione la tecla ENTER\n...");
         scanner.nextLine();
 
     }
-
     private static String createGraphString(Grafo grafo){
         String texto="digraph G\n"
         + "{\n";
@@ -88,5 +133,33 @@ public final class App {
         }catch (Exception e ){
             e.printStackTrace();
         }
+    }
+    public static void drawTreeviz(String name, ArbolER grafo, int raiz, String imageName){
+        try{
+            createFile(name, createTreeString(grafo,raiz));
+            ProcessBuilder pb;
+            pb = new ProcessBuilder("dot", "-Tpng", "-o", imageName, name);
+
+            pb.redirectErrorStream(true);
+            pb.start();
+        }catch (Exception e ){
+            e.printStackTrace();
+        }
+    }
+    private static String createTreeString(ArbolER grafo, int raiz){
+        String texto="digraph G\n"
+        + "{\n";
+        
+        for (int i=0; i<grafo.getCantidadNodos(); i++){
+            if(!grafo.getNodoIn(i).getIsLeaf()){
+                texto=texto + i +" -> " + grafo.getNodoIn(i).getLeftChild() +";\n";
+                if (!(grafo.getNodoIn(i).getContenido().equals("+")||grafo.getNodoIn(i).getContenido().equals("*")||grafo.getNodoIn(i).getContenido().equals("?"))){
+                    texto=texto + i +" -> " + grafo.getNodoIn(i).getRightChild() +";\n";
+                }
+            }
+            texto = texto + i +" [label = \""+grafo.getNodoIn(i).getContenido()+"\"];\n";
+        }
+        texto=texto+"\n}";
+        return texto;
     }
 }
