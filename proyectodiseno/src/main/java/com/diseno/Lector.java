@@ -2,8 +2,6 @@ package com.diseno;
 
 import java.util.ArrayList;
 
-import javafx.scene.SubScene;
-
 public class Lector{
     private final String EPSILON = "epsilon";
     private Grafo noDeterminista;

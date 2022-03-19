@@ -1,14 +1,8 @@
 package com.diseno;
 
-import java.beans.Expression;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Scanner;
-
-import org.apache.commons.logging.Log;
-
 
 /**
  * Hello world!
@@ -87,7 +81,7 @@ public final class App {
         }
         System.out.println("Gracias por utilizar el programa\nPara salir presione la tecla ENTER\n...");
         scanner.nextLine();
-
+        scanner.close();
     }
     private static String createGraphString(Grafo grafo){
         String texto="digraph G\n"
